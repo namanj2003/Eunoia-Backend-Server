@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt } = require('../utils/encryption');
 
 const chatMessageSchema = new mongoose.Schema({
   userId: {
@@ -20,14 +21,17 @@ const chatMessageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: [true, 'Message content is required'],
-    maxlength: [5000, 'Message cannot be more than 5000 characters']
+    set: encrypt, // Encrypt on save
+    get: decrypt  // Decrypt on read
   },
   timestamp: {
     type: Date,
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { getters: true }, // Enable getters when converting to JSON
+  toObject: { getters: true } // Enable getters when converting to object
 });
 
 // Compound index for efficient querying
@@ -49,7 +53,8 @@ const chatSessionSchema = new mongoose.Schema({
   title: {
     type: String,
     default: 'New Chat',
-    maxlength: [200, 'Title cannot be more than 200 characters']
+    set: encrypt, // Encrypt on save
+    get: decrypt  // Decrypt on read
   },
   createdAt: {
     type: Date,
@@ -64,7 +69,9 @@ const chatSessionSchema = new mongoose.Schema({
     default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { getters: true }, // Enable getters when converting to JSON
+  toObject: { getters: true } // Enable getters when converting to object
 });
 
 // Index for faster queries

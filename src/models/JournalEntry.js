@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt } = require('../utils/encryption');
 
 const journalEntrySchema = new mongoose.Schema({
   userId: {
@@ -10,18 +11,19 @@ const journalEntrySchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, 'Please provide a title'],
-    trim: true,
-    maxlength: [200, 'Title cannot be more than 200 characters']
+    set: encrypt, // Encrypt on save
+    get: decrypt  // Decrypt on read
   },
   content: {
     type: String,
     required: [true, 'Please provide content'],
-    maxlength: [10000, 'Content cannot be more than 10000 characters']
+    set: encrypt, // Encrypt on save
+    get: decrypt  // Decrypt on read
   },
   mood: {
     type: String,
-    enum: ['very-happy', 'happy', 'neutral', 'sad', 'very-sad', 'anxious', 'calm', 'stressed'],
     default: 'neutral'
+    // Removed enum restriction to allow ML-detected emotions (anger, joy, sadness, etc.)
   },
   tags: [{
     type: String,
@@ -59,7 +61,9 @@ const journalEntrySchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { getters: true }, // Enable getters when converting to JSON
+  toObject: { getters: true } // Enable getters when converting to object
 });
 
 // Index for faster queries

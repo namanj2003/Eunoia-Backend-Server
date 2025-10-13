@@ -31,6 +31,25 @@ const journalEntrySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  mlAnalysis: {
+    primary_emotion: String,
+    emotion_confidence: Number,
+    detected_emotions: [{
+      emotion: String,
+      score: Number
+    }],
+    emotional_state_summary: String,
+    tags: [String],
+    timestamp: Date
+  },
+  keystrokeData: {
+    total_keystrokes: Number,
+    typing_duration: Number,
+    avg_wpm: Number,
+    pause_count: Number,
+    error_rate: Number,
+    mental_state: String
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -1,5 +1,6 @@
 const JournalEntry = require('../models/JournalEntry');
 const { validationResult } = require('express-validator');
+const { analyzeJournalEntry, batchAnalyzeEntries } = require('../services/mlService');
 
 // @desc    Get all journal entries for logged in user
 // @route   GET /api/journal
@@ -78,20 +79,57 @@ const createJournalEntry = async (req, res) => {
       });
     }
 
-    const { title, content, mood, tags, isPrivate } = req.body;
+    const { title, content, mood, tags, isPrivate, keystrokeData } = req.body;
+
+    console.log('=== Creating Journal Entry ===');
+    console.log('Title:', title);
+    console.log('Content preview:', content?.substring(0, 50) + '...');
+    console.log('Mood from frontend:', mood);
+    console.log('Tags from frontend:', tags);
+
+    // Perform ML analysis on the journal entry (optional, non-blocking)
+    let mlAnalysis = null;
+    let detectedEmotion = mood; // Use mood from frontend as fallback
+    
+    try {
+      console.log('Calling ML service...');
+      const analysisResult = await analyzeJournalEntry(title, content);
+      console.log('ML service response:', analysisResult);
+      
+      if (analysisResult.success) {
+        mlAnalysis = analysisResult.analysis;
+        detectedEmotion = mlAnalysis.primary_emotion; // Use ML-detected emotion
+        console.log('✅ ML Analysis completed successfully!');
+        console.log('   Primary emotion:', mlAnalysis.primary_emotion);
+        console.log('   Confidence:', mlAnalysis.emotion_confidence);
+        console.log('   Generated tags:', mlAnalysis.tags);
+      } else {
+        console.log('❌ ML analysis returned success=false');
+      }
+    } catch (mlError) {
+      // Log ML error but don't fail the journal creation
+      console.warn('❌ ML analysis failed with exception:', mlError.message);
+      console.warn('   Stack:', mlError.stack);
+    }
+
+    console.log('Final mood being saved:', detectedEmotion);
+    console.log('Final tags being saved:', mlAnalysis ? mlAnalysis.tags : tags);
 
     const entry = await JournalEntry.create({
       userId: req.user._id,
       title,
       content,
-      mood,
-      tags,
-      isPrivate
+      mood: detectedEmotion, // Use ML-detected emotion or fallback
+      tags: mlAnalysis ? mlAnalysis.tags : (tags || []), // Use ML-generated tags if available
+      isPrivate: isPrivate !== undefined ? isPrivate : true,
+      mlAnalysis, // Store complete ML analysis result
+      keystrokeData // Store keystroke dynamics data
     });
 
     res.status(201).json({
       success: true,
-      data: entry
+      data: entry,
+      mlAnalysis // Return ML analysis to frontend for immediate display
     });
   } catch (error) {
     console.error('Create journal entry error:', error);

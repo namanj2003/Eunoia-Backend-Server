@@ -1,17 +1,10 @@
 const nodemailer = require('nodemailer');
 
-/**
- * Email Service Configuration
- * 
- * For development: Uses Ethereal (fake SMTP service)
- * For production: Configure with real SMTP service (Gmail, SendGrid, AWS SES, etc.)
- */
-
 // Create transporter
 const createTransporter = async () => {
   // Use Gmail SMTP with credentials from .env
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
-    console.log('📧 Configuring Gmail SMTP transporter with:', {
+    console.log('Configuring Gmail SMTP transporter with:', {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
       user: process.env.SMTP_USER,
@@ -30,14 +23,14 @@ const createTransporter = async () => {
       }
     });
     
-    console.log('✅ Gmail transporter created successfully');
+    console.log('Gmail transporter created successfully');
     return transporter;
   }
   
   // Fallback to Ethereal if SMTP not configured (shouldn't happen)
-  console.log('⚠️ No SMTP credentials found in .env, falling back to Ethereal');
+  console.log('No SMTP credentials found in .env, falling back to Ethereal');
   const testAccount = await nodemailer.createTestAccount();
-  console.log('✅ Ethereal test account created:', testAccount.user);
+  console.log('Ethereal test account created:', testAccount.user);
   
   return nodemailer.createTransport({
     host: testAccount.smtp.host,
@@ -60,7 +53,7 @@ const createTransporter = async () => {
  */
 const sendEmail = async (options) => {
   try {
-    console.log('📧 Attempting to send email to:', options.to);
+    console.log('Attempting to send email to:', options.to);
     const transporter = await createTransporter();
 
     const mailOptions = {
@@ -71,7 +64,7 @@ const sendEmail = async (options) => {
       html: options.html,
     };
 
-    console.log('📧 Sending email with options:', {
+    console.log('Sending email with options:', {
       from: mailOptions.from,
       to: mailOptions.to,
       subject: mailOptions.subject,
@@ -79,7 +72,7 @@ const sendEmail = async (options) => {
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('✅ Email sent successfully via Gmail!', {
+    console.log('Email sent successfully via Gmail!', {
       messageId: info.messageId,
       to: options.to,
       subject: options.subject,
@@ -89,7 +82,7 @@ const sendEmail = async (options) => {
     
     return info;
   } catch (error) {
-    console.error('❌ Email sending failed:', {
+    console.error('Email sending failed:', {
       error: error.message,
       code: error.code,
       command: error.command,
@@ -178,12 +171,6 @@ const sendWelcomeEmail = async (user) => {
           </ul>
         </div>
         
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.CLIENT_URL || 'http://localhost:3000'}" class="button">
-            Begin Your Journey
-          </a>
-        </p>
-        
         <div class="feature-box">
           <h3>💡 Tips for getting started:</h3>
           <ol>
@@ -223,7 +210,13 @@ What you can do with Eunoia:
 - AI Chat: Get support whenever you need it
 - Meditation: Access guided sessions
 
-Visit ${process.env.CLIENT_URL || 'http://localhost:3000'} to begin your journey!
+Tips for getting started:
+1. Complete your onboarding to personalize your experience
+2. Write your first journal entry to start tracking your journey
+3. Check in daily to build a healthy routine
+4. Explore the AI chat for personalized support
+
+Open the Eunoia app on your device to begin your journey!
 
 Best wishes,
 The Eunoia Team

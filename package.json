@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "Backend server for Eunoia Mental Health App",
   "main": "src/server.js",
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate-key": "node src/scripts/generateEncryptionKey.js"
   },
   "keywords": [
     "mental-health",

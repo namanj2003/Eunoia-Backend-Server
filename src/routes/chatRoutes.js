@@ -8,7 +8,8 @@ const {
   addChatMessage,
   updateChatSession,
   deleteChatSession,
-  getChatMessages
+  getChatMessages,
+  getMindfulnessStreak
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/auth');
 
@@ -37,5 +38,7 @@ router.route('/sessions/:sessionId')
 router.route('/sessions/:sessionId/messages')
   .get(getChatMessages)
   .post(chatMessageValidation, addChatMessage);
+
+router.get('/mindfulness-streak', getMindfulnessStreak);
 
 module.exports = router;

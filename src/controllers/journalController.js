@@ -1,10 +1,6 @@
 const JournalEntry = require('../models/JournalEntry');
 const { validationResult } = require('express-validator');
-const { analyzeJournalEntry, batchAnalyzeEntries } = require('../services/mlService');
 
-// @desc    Get all journal entries for logged in user
-// @route   GET /api/journal
-// @access  Private
 const getJournalEntries = async (req, res) => {
   try {
     const { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
@@ -34,9 +30,6 @@ const getJournalEntries = async (req, res) => {
   }
 };
 
-// @desc    Get single journal entry
-// @route   GET /api/journal/:id
-// @access  Private
 const getJournalEntry = async (req, res) => {
   try {
     const entry = await JournalEntry.findOne({
@@ -65,9 +58,6 @@ const getJournalEntry = async (req, res) => {
   }
 };
 
-// @desc    Create new journal entry
-// @route   POST /api/journal
-// @access  Private
 const createJournalEntry = async (req, res) => {
   try {
     // Check for validation errors
@@ -79,57 +69,41 @@ const createJournalEntry = async (req, res) => {
       });
     }
 
-    const { title, content, mood, tags, isPrivate, keystrokeData } = req.body;
+    const { title, content, mood, tags, isPrivate, keystrokeData, mlAnalysis } = req.body;
 
     console.log('=== Creating Journal Entry ===');
     console.log('Title:', title);
     console.log('Content preview:', content?.substring(0, 50) + '...');
     console.log('Mood from frontend:', mood);
     console.log('Tags from frontend:', tags);
-
-    // Perform ML analysis on the journal entry (optional, non-blocking)
-    let mlAnalysis = null;
-    let detectedEmotion = mood; // Use mood from frontend as fallback
-    
-    try {
-      console.log('Calling ML service...');
-      const analysisResult = await analyzeJournalEntry(title, content);
-      console.log('ML service response:', analysisResult);
-      
-      if (analysisResult.success) {
-        mlAnalysis = analysisResult.analysis;
-        detectedEmotion = mlAnalysis.primary_emotion; // Use ML-detected emotion
-        console.log('✅ ML Analysis completed successfully!');
-        console.log('   Primary emotion:', mlAnalysis.primary_emotion);
-        console.log('   Confidence:', mlAnalysis.emotion_confidence);
-        console.log('   Generated tags:', mlAnalysis.tags);
-      } else {
-        console.log('❌ ML analysis returned success=false');
-      }
-    } catch (mlError) {
-      // Log ML error but don't fail the journal creation
-      console.warn('❌ ML analysis failed with exception:', mlError.message);
-      console.warn('   Stack:', mlError.stack);
+    console.log('ML Analysis from frontend:', mlAnalysis ? 'Present' : 'Not present');
+    if (mlAnalysis) {
+      console.log('ML Analysis structure:', JSON.stringify(mlAnalysis, null, 2));
+      console.log('ML Analysis keys:', Object.keys(mlAnalysis));
+      console.log('Primary emotion:', mlAnalysis.primary_emotion);
     }
-
-    console.log('Final mood being saved:', detectedEmotion);
-    console.log('Final tags being saved:', mlAnalysis ? mlAnalysis.tags : tags);
 
     const entry = await JournalEntry.create({
       userId: req.user._id,
       title,
       content,
-      mood: detectedEmotion, // Use ML-detected emotion or fallback
-      tags: mlAnalysis ? mlAnalysis.tags : (tags || []), // Use ML-generated tags if available
+      mood, // Use mood from frontend
+      tags: tags || [],
       isPrivate: isPrivate !== undefined ? isPrivate : true,
-      mlAnalysis, // Store complete ML analysis result
+      mlAnalysis, // Store ML analysis received from frontend
       keystrokeData // Store keystroke dynamics data
+    });
+
+    console.log('Entry saved to database:', {
+      _id: entry._id,
+      mood: entry.mood,
+      hasMlAnalysis: !!entry.mlAnalysis,
+      mlAnalysisKeys: entry.mlAnalysis ? Object.keys(entry.mlAnalysis) : []
     });
 
     res.status(201).json({
       success: true,
-      data: entry,
-      mlAnalysis // Return ML analysis to frontend for immediate display
+      data: entry
     });
   } catch (error) {
     console.error('Create journal entry error:', error);
@@ -141,9 +115,6 @@ const createJournalEntry = async (req, res) => {
   }
 };
 
-// @desc    Update journal entry
-// @route   PUT /api/journal/:id
-// @access  Private
 const updateJournalEntry = async (req, res) => {
   try {
     let entry = await JournalEntry.findOne({
@@ -190,9 +161,6 @@ const updateJournalEntry = async (req, res) => {
   }
 };
 
-// @desc    Delete journal entry
-// @route   DELETE /api/journal/:id
-// @access  Private
 const deleteJournalEntry = async (req, res) => {
   try {
     const entry = await JournalEntry.findOne({
@@ -223,9 +191,6 @@ const deleteJournalEntry = async (req, res) => {
   }
 };
 
-// @desc    Search journal entries
-// @route   GET /api/journal/search
-// @access  Private
 const searchJournalEntries = async (req, res) => {
   try {
     const { query, mood, startDate, endDate } = req.query;

@@ -10,9 +10,13 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const journalRoutes = require('./routes/journalRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const wellnessRoutes = require('./routes/wellnessRoutes');
 
-// Initialize express app
+// Initialize Express app
 const app = express();
+
+// Trust proxy required for Railway
+app.set('trust proxy', 1);
 
 // Connect to database
 connectDB();
@@ -20,10 +24,16 @@ connectDB();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - Allow multiple origins
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'capacitor://localhost',  // iOS Capacitor
+  'http://localhost',       // Android Capacitor
+  'https://localhost',      // Android Capacitor (HTTPS)
+  'ionic://localhost', 
+  
+       // Ionic
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -32,10 +42,25 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // In development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Check if origin starts with allowed patterns (for mobile apps with dynamic ports)
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (origin === allowedOrigin) return true;
+      // Allow any localhost with http/https (for Android with different ports)
+      if (origin.startsWith('http://localhost') || origin.startsWith('https://localhost')) return true;
+      // Allow capacitor schemes
+      if (origin.startsWith('capacitor://') || origin.startsWith('ionic://')) return true;
+      return false;
+    });
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('❌ Blocked by CORS:', origin);
+      console.log('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -43,8 +68,8 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-console.log('🔧 CORS Configuration:');
-console.log('   Allowed Origins:', allowedOrigins);
+console.log('CORS Configuration:');
+console.log('Allowed Origins:', allowedOrigins);
 
 app.use(cors(corsOptions));
 
@@ -57,11 +82,25 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting
+// const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+
+// Rate limiting - More lenient in development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for dev
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, 
+  legacyHeaders: false,
+
+    validate: {
+    ip: false, // Disable IP validation
+    keyGeneratorIpFallback: false, // Disable IPv6 warning
+  },
+  // keyGenerator: (req, res) => {
+  //   // Strip port number and handle IPv6 properly
+  //   const ip = req.ip.replace(/:\d+[^:]*$/, '');
+  //   return ipKeyGenerator(ip);
+  // },
 });
 app.use('/api/', limiter);
 
@@ -74,10 +113,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Add this TEMPORARY endpoint for debugging
+app.get('/debug-key', (req, res) => {
+  const key = process.env.ENCRYPTION_KEY;
+  res.json({
+    keyExists: !!key,
+    keyLength: key?.length,
+    first10: key?.substring(0, 10),
+    last10: key?.substring(key?.length - 10)
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/journal', journalRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/wellness', wellnessRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -131,6 +182,8 @@ app.use((err, req, res, next) => {
     message: err.message || 'Internal Server Error'
   });
 });
+
+
 
 // Start server
 const PORT = process.env.PORT || 5000;

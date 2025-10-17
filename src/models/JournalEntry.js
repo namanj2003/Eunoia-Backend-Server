@@ -23,7 +23,6 @@ const journalEntrySchema = new mongoose.Schema({
   mood: {
     type: String,
     default: 'neutral'
-    // Removed enum restriction to allow ML-detected emotions (anger, joy, sadness, etc.)
   },
   tags: [{
     type: String,
@@ -42,7 +41,7 @@ const journalEntrySchema = new mongoose.Schema({
     }],
     emotional_state_summary: String,
     tags: [String],
-    timestamp: Date
+    timestamp: String
   },
   keystrokeData: {
     total_keystrokes: Number,

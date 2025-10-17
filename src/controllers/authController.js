@@ -10,9 +10,6 @@ const generateToken = (id) => {
   });
 };
 
-// @desc    Register new user
-// @route   POST /api/auth/register
-// @access  Public
 const register = async (req, res) => {
   try {
     // Check for validation errors
@@ -69,9 +66,6 @@ const register = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 const login = async (req, res) => {
   try {
     // Check for validation errors
@@ -134,9 +128,7 @@ const login = async (req, res) => {
   }
 };
 
-// @desc    Get current user profile
-// @route   GET /api/auth/me
-// @access  Private
+//Get current user profile
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -155,9 +147,6 @@ const getMe = async (req, res) => {
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/auth/updateprofile
-// @access  Private
 const updateProfile = async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -201,9 +190,6 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Change password
-// @route   PUT /api/auth/changepassword
-// @access  Private
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -247,9 +233,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-// @desc    Forgot password - Send OTP
-// @route   POST /api/auth/forgotpassword
-// @access  Public
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -297,9 +280,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Reset password
-// @route   PUT /api/auth/resetpassword/:resetToken
-// @access  Public
 const resetPassword = async (req, res) => {
   try {
     const { password } = req.body;
@@ -346,9 +326,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// @desc    Verify OTP
-// @route   POST /api/auth/verifyotp
-// @access  Public
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -394,9 +371,6 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-// @desc    Reset password with OTP
-// @route   PUT /api/auth/resetpasswordotp
-// @access  Public
 const resetPasswordWithOTP = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -455,9 +429,6 @@ const resetPasswordWithOTP = async (req, res) => {
   }
 };
 
-// @desc    Delete user account and all associated data
-// @route   DELETE /api/auth/account
-// @access  Private
 const deleteAccount = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -469,9 +440,6 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    // TODO: Delete all user's associated data (journals, chat sessions, etc.)
-    // This will be implemented when journal and chat models are created
-    
     // Delete the user account
     await User.findByIdAndDelete(req.user.id);
 

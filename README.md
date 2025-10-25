@@ -30,6 +30,7 @@ Node.js/Express REST API for authentication, secure journaling, mood analytics, 
 - ENCRYPTION_KEY=32-byte-hex-or-base64
 - PORT=3000
 - CORS_ORIGIN=https://your-frontend
+
 // Email configuration
 - EMAIL_HOST=smtp.example.com
 - EMAIL_PORT=587
